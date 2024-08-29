@@ -107,7 +107,7 @@ exports.getAllCreditAdmin = async (req, res) => {
         {
           model: people,
           as: "people",
-          attributes: ["firstname", "lastname", "uid", "credit"],
+          attributes: ["firstname", "lastname", "uid", "credit","phone"],
         },
         {
           model: user,
