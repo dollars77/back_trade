@@ -370,7 +370,7 @@ exports.createUserTrade = async (req, res) => {
     amount: Number(req.body.amount),
     opening_time: dayjs(),
     opening_price: Number(getPrice),
-    closing_time: dayjs().add(req.body.countTime, 'second'), // second , minute , day
+    closing_time: dayjs().add(req.body.countTime, 'minute'), // second , minute , day
     // closing_price: req.body.idbank,
     status: 0,
     adminstatus: 0,
