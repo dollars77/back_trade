@@ -3,7 +3,7 @@ const tradelist = db.tradelist;
 const people = db.people;
 const dayjs = require("dayjs");
 const axios = require('axios');
-const api_key = "3241cf5d6f-9d72d16194-sipmfu";
+const api_key = "4c1ae80e15-97c9c85ef4-sibb6h";
 var cron = require('node-cron');
 
 const sequelize = require("sequelize");
