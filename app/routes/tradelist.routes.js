@@ -4,6 +4,9 @@ module.exports =(app)=>{
     var router = require("express").Router();
 
     router.post('/createusertrade',tradelist.createUserTrade);
+    router.post('/getTradePrice',tradelist.getTradePrice);
+    router.post('/createUserTradeConfirm',tradelist.createUserTradeConfirm);
+
     router.get('/getoneusertrading/:id',tradelist.getOneUserTrading)
     router.get('/getoneuseralltrade/:id',tradelist.getOneUserAllTrade)
     router.get('/getoneuseralltradeadmin/:id',tradelist.getOneUserAllTradeAdmin)
