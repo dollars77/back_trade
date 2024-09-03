@@ -7,7 +7,7 @@ const api_key = "4c1ae80e15-97c9c85ef4-sibb6h";
 var cron = require('node-cron');
 
 const sequelize = require("sequelize");
-const sequelizeInstance = db.sequelize; 
+const sequelizeInstance = db.sequelize;
 const op = sequelize.Op;
 
 
@@ -138,7 +138,8 @@ cron.schedule('*/10 * * * * *', async () => {
               try {
                 const response = await axios.get(`https://api.fastforex.io/fetch-one?from=${symbolName}&to=USD&api_key=${api_key}`, {
                 });
-                closing_price = Number(response.data.result.USD) === Number(trade.opening_price) ? randomCoinLossOrWin(trade.opening_price) : response.data.result.USD;
+                closing_price = Number(response.data.result.USD) === Number(trade.opening_price) ? randomCoinLossOrWin(Number(trade.opening_price)) : response.data.result.USD;
+                // closing_price = response.data.result.USD;
 
               } catch (error) {
                 closing_price = randomCoinLossOrWin(trade.opening_price)
@@ -148,7 +149,8 @@ cron.schedule('*/10 * * * * *', async () => {
               try {
                 const response = await axios.get(`https://api.fastforex.io/fetch-one?from=USD&to=${symbolName}&api_key=${api_key}`, {
                 })
-                closing_price = Number(response.data.result.JPY) === Number(trade.opening_price) ? randomCoinLossOrWin(trade.opening_price) : response.data.result.JPY;
+                closing_price = Number(response.data.result.JPY) === Number(trade.opening_price) ? randomCoinLossOrWin(Number(trade.opening_price)) : response.data.result.JPY;
+                // closing_price = response.data.result.JPY;
 
               } catch (error) {
                 closing_price = randomCoinLossOrWin(trade.opening_price)
@@ -159,7 +161,8 @@ cron.schedule('*/10 * * * * *', async () => {
               try {
                 const response = await axios.get(`https://api.fastforex.io/fetch-one?from=USD&to=${symbolName}&api_key=${api_key}`, {
                 });
-                closing_price = Number(response.data.result.CAD) === Number(trade.opening_price) ? randomCoinLossOrWin(trade.opening_price) : response.data.result.CAD;
+                closing_price = Number(response.data.result.CAD) === Number(trade.opening_price) ? randomCoinLossOrWin(Number(trade.opening_price)) : response.data.result.CAD;
+                // closing_price = response.data.result.CAD;
 
               } catch (error) {
                 closing_price = randomCoinLossOrWin(trade.opening_price)
@@ -400,6 +403,122 @@ exports.createUserTrade = async (req, res) => {
 
 };
 
+exports.getTradePrice = async (req, res) => {
+  try {
+
+
+    dayjs.locale("th");
+    let peopledata = null;
+    let symbolName = req.body.symbol.toUpperCase();
+    let getPrice = 0;
+    try {
+      peopledata = await people.findOne({
+        attributes: ["id", "credit"],
+        where: { id: req.body.peopleId },
+      });
+      peopledata = JSON.stringify(peopledata);
+      peopledata = JSON.parse(peopledata);
+    } catch (error) {
+
+      res.status(500).send({
+        status: 500,
+        message:
+          error.message || "Some error occurred while creating the People.",
+      });
+    }
+    if (Number(peopledata.credit) < Number(req.body.amount)) {
+      res.status(401).send({
+        status: 401,
+        message: "Insufficient amount",
+      });
+      return;
+    }
+    if (symbolName === "EUR" || symbolName === "GBP" || symbolName === "AUD") {
+      try {
+        const response = await axios.get(`https://api.fastforex.io/fetch-one?from=${symbolName}&to=USD&api_key=${api_key}`, {
+        });
+        getPrice = response.data.result.USD;
+
+      } catch (error) {
+        getPrice = genRand(0.001, 1, 5);
+      }
+      symbolName += "USD";
+    } else if (symbolName === "JPY") {
+      try {
+        const response = await axios.get(`https://api.fastforex.io/fetch-one?from=USD&to=${symbolName}&api_key=${api_key}`, {
+        });
+        getPrice = response.data.result.JPY;
+      } catch (error) {
+        getPrice = genRand(140, 150, 3);
+      }
+      symbolName += "USD";
+    } else if (symbolName === "CAD") {
+      try {
+        const response = await axios.get(`https://api.fastforex.io/fetch-one?from=USD&to=${symbolName}&api_key=${api_key}`, {
+        });
+        getPrice = response.data.result.CAD;
+      } catch (error) {
+        getPrice = genRand(0.001, 1.3, 5);
+      }
+      symbolName += "USD";
+    } else {
+      try {
+        const response = await axios.get(`https://api.binance.com/api/v3/ticker/price?symbol=${symbolName}`, {
+        });
+        getPrice = response.data.price;
+      } catch (error) {
+        const symbol_subUSDT = symbolName.substring(0, symbolName.length - 4);
+        const response = await axios.get(`https://api.fastforex.io//crypto/fetch-prices?pairs=${symbol_subUSDT}/USDT&api_key=${api_key}`, {
+        });
+        getPrice = Object.values(response.data.prices)[0];
+      }
+    }
+    res.status(200).send({ getPrice: getPrice.toString(), symbolName: symbolName });
+  } catch (error) {
+    res.status(500).send({
+      message: error.message || "Some error occurred while retrieving User.",
+    });
+  }
+}
+
+exports.createUserTradeConfirm = async (req, res) => {
+  const symbolName = req.body.symbol.toUpperCase();
+  const getPrice = req.body.getPrice;
+  const user_data = {
+
+    symbol: symbolName,
+    type_order: (req.body.selectSell !== 1 && req.body.selectSell !== 2 ? 1 : req.body.selectSell),
+    amount: Number(req.body.amount),
+    opening_time: dayjs(),
+    opening_price: Number(getPrice),
+    closing_time: dayjs().add(req.body.countTime, 'second'), // second , minute , day
+    status: 0,
+    adminstatus: 0,
+    selectPercent: req.body.selectPercent,
+    peopleId: req.body.peopleId,
+
+  }
+
+  return await tradelist
+    .create(user_data)
+    .then(async (data) => {
+
+      // await people.update({ credit: Number(peopledata.credit) - Number(req.body.amount) }, { where: { id: req.body.peopleId } })
+      await people.increment("credit", { by: -req.body.amount, where: { id: req.body.peopleId }, });
+      res.status(200).send({ status: true, id: data.id });
+    })
+    .catch((err) => {
+
+      res.status(500).send({
+        status: 500,
+        message:
+          err.message || "Some error occurred while creating the People.",
+      });
+
+
+    });
+}
+
 exports.getOneUserTrading = async (req, res) => {
   await tradelist
     .findAll({
@@ -576,8 +695,8 @@ exports.AdminSetTrade = async (req, res) => {
 exports.getOneUserTradingTimeout = async (req, res) => {
   // const transaction = await sequelizeInstance.transaction();
   try {
- 
-    let onetradelist = await tradelist.findOne({ where: { id: req.body.id }});
+
+    let onetradelist = await tradelist.findOne({ where: { id: req.body.id } });
     onetradelist = JSON.stringify(onetradelist);
     onetradelist = JSON.parse(onetradelist);
 
@@ -689,7 +808,7 @@ exports.getOneUserTradingTimeout = async (req, res) => {
           trade_result = 0;
           people_amout = Math2float(net) + Math2float(onetradelist.amount);
 
-          await people.increment("credit", { by: people_amout, where: { id: onetradelist.peopleId }});
+          await people.increment("credit", { by: people_amout, where: { id: onetradelist.peopleId } });
 
         } else {//แพ้ตลาด
 
@@ -704,7 +823,7 @@ exports.getOneUserTradingTimeout = async (req, res) => {
 
       trade_result = 0;
       people_amout = (net + Number(onetradelist.amount));
-      await people.increment("credit", { by: people_amout, where: { id: onetradelist.peopleId }});
+      await people.increment("credit", { by: people_amout, where: { id: onetradelist.peopleId } });
 
     } else { //แอดมินให้แพ้
       price_stock = onetradelist.closing_price;
@@ -727,7 +846,7 @@ exports.getOneUserTradingTimeout = async (req, res) => {
       }).then((data) => {
         res.status(200).send(data);
       })
-      
+
   } catch (err) {
     res.status(500).send({
       message: err.message || "Some error occurred while retrieving getOneUserTradingTimeout.",
