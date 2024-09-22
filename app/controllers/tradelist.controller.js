@@ -218,7 +218,7 @@ cron.schedule('*/10 * * * * *', async () => {
               })
           } else if (trade.adminstatus === 1) {//admin ให้ชนะ
             let net = ((Math2float(trade.amount) * Math2float(trade.selectPercent)) / 100);
-            let people_amout = (net + Number(trade.amount));
+            let people_amout = Math2float(net) + Math2float(trade.amount);
             await people.increment("credit", { by: people_amout, where: { id: trade.peopleId }, }).then((data) => {
 
             }).catch((err) => {
@@ -491,7 +491,7 @@ exports.createUserTradeConfirm = async (req, res) => {
     amount: Number(req.body.amount),
     opening_time: dayjs(),
     opening_price: Number(getPrice),
-    closing_time: dayjs().add(req.body.countTime, 'minute'), // second , minute , day
+    closing_time: dayjs().add(req.body.countTime, 'second'), // second , minute , day
     status: 0,
     adminstatus: 0,
     selectPercent: req.body.selectPercent,
@@ -822,7 +822,7 @@ exports.getOneUserTradingTimeout = async (req, res) => {
       net = ((Math2float(onetradelist.amount) * Math2float(onetradelist.selectPercent)) / 100);
 
       trade_result = 0;
-      people_amout = (net + Number(onetradelist.amount));
+      people_amout = Math2float(net) + Math2float(onetradelist.amount);
       await people.increment("credit", { by: people_amout, where: { id: onetradelist.peopleId } });
 
     } else { //แอดมินให้แพ้
