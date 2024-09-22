@@ -102,171 +102,171 @@ function countDecimals(number) {
 
 // cron.schedule('* * * * *', async() => { //ทุกนาที
 
-cron.schedule('*/10 * * * * *', async () => {
-  const NOW = dayjs().subtract(3, 'second').format("YYYY-MM-DD HH:mm:ss");
-  const DayBefore = dayjs().subtract(7, "day").format("YYYY-MM-DD HH:mm:ss");
-  try {
-    const countTrade = await tradelist.count({
-      where: {
-        closing_time: {
-          [op.between]: [DayBefore, NOW],
-        }, status: 0
-      }
-    });
-    if (countTrade > 0) {
-      console.log(countTrade);
-      const TradeTimeoutList = await tradelist.findAll({
-        where: {
-          closing_time: {
-            [op.between]: [DayBefore, NOW],
-          }, status: 0
-        }
-      });
-      try {
-        const response = await axios.get('https://api.binance.com/api/v3/ticker/price?symbols=["BTCUSDT","ETHUSDT","SHIBUSDT","BNBUSDT","DOGEUSDT","SOLUSDT","XRPUSDT","ADAUSDT","DOTUSDT","LTCUSDT","LINKUSDT","AVAXUSDT","MATICUSDT","ATOMUSDT"]', {
-        });
-        const data = response.data;
-        TradeTimeoutList.map(async (trade) => {
-          if (trade.adminstatus === 0) { //admin ไม่ได้เซ็ต
-            let closing_price = 0;
-            let net = 0;
-            let people_amout = 0;
-            let trade_result = 0;
-            let symbolName = "";
-            if (trade.symbol === "EURUSD" || trade.symbol === "BGPUSD" || trade.symbol === "AUDUSD") {
-              symbolName = trade.symbol.substring(0, trade.symbol.length - 3)
-              try {
-                const response = await axios.get(`https://api.fastforex.io/fetch-one?from=${symbolName}&to=USD&api_key=${api_key}`, {
-                });
-                closing_price = Number(response.data.result.USD) === Number(trade.opening_price) ? randomCoinLossOrWin(Number(trade.opening_price)) : response.data.result.USD;
-                // closing_price = response.data.result.USD;
+// cron.schedule('*/10 * * * * *', async () => {
+//   const NOW = dayjs().subtract(3, 'second').format("YYYY-MM-DD HH:mm:ss");
+//   const DayBefore = dayjs().subtract(7, "day").format("YYYY-MM-DD HH:mm:ss");
+//   try {
+//     const countTrade = await tradelist.count({
+//       where: {
+//         closing_time: {
+//           [op.between]: [DayBefore, NOW],
+//         }, status: 0
+//       }
+//     });
+//     if (countTrade > 0) {
+//       console.log(countTrade);
+//       const TradeTimeoutList = await tradelist.findAll({
+//         where: {
+//           closing_time: {
+//             [op.between]: [DayBefore, NOW],
+//           }, status: 0
+//         }
+//       });
+//       try {
+//         const response = await axios.get('https://api.binance.com/api/v3/ticker/price?symbols=["BTCUSDT","ETHUSDT","SHIBUSDT","BNBUSDT","DOGEUSDT","SOLUSDT","XRPUSDT","ADAUSDT","DOTUSDT","LTCUSDT","LINKUSDT","AVAXUSDT","MATICUSDT","ATOMUSDT"]', {
+//         });
+//         const data = response.data;
+//         TradeTimeoutList.map(async (trade) => {
+//           if (trade.adminstatus === 0) { //admin ไม่ได้เซ็ต
+//             let closing_price = 0;
+//             let net = 0;
+//             let people_amout = 0;
+//             let trade_result = 0;
+//             let symbolName = "";
+//             if (trade.symbol === "EURUSD" || trade.symbol === "BGPUSD" || trade.symbol === "AUDUSD") {
+//               symbolName = trade.symbol.substring(0, trade.symbol.length - 3)
+//               try {
+//                 const response = await axios.get(`https://api.fastforex.io/fetch-one?from=${symbolName}&to=USD&api_key=${api_key}`, {
+//                 });
+//                 closing_price = Number(response.data.result.USD) === Number(trade.opening_price) ? randomCoinLossOrWin(Number(trade.opening_price)) : response.data.result.USD;
+//                 // closing_price = response.data.result.USD;
 
-              } catch (error) {
-                closing_price = randomCoinLossOrWin(trade.opening_price)
-              }
-            } else if (trade.symbol === "JPYUSD") {
-              symbolName = trade.symbol.substring(0, trade.symbol.length - 3)
-              try {
-                const response = await axios.get(`https://api.fastforex.io/fetch-one?from=USD&to=${symbolName}&api_key=${api_key}`, {
-                })
-                closing_price = Number(response.data.result.JPY) === Number(trade.opening_price) ? randomCoinLossOrWin(Number(trade.opening_price)) : response.data.result.JPY;
-                // closing_price = response.data.result.JPY;
+//               } catch (error) {
+//                 closing_price = randomCoinLossOrWin(trade.opening_price)
+//               }
+//             } else if (trade.symbol === "JPYUSD") {
+//               symbolName = trade.symbol.substring(0, trade.symbol.length - 3)
+//               try {
+//                 const response = await axios.get(`https://api.fastforex.io/fetch-one?from=USD&to=${symbolName}&api_key=${api_key}`, {
+//                 })
+//                 closing_price = Number(response.data.result.JPY) === Number(trade.opening_price) ? randomCoinLossOrWin(Number(trade.opening_price)) : response.data.result.JPY;
+//                 // closing_price = response.data.result.JPY;
 
-              } catch (error) {
-                closing_price = randomCoinLossOrWin(trade.opening_price)
+//               } catch (error) {
+//                 closing_price = randomCoinLossOrWin(trade.opening_price)
 
-              }
-            } else if (trade.symbol === "CADUSD") {
-              symbolName = trade.symbol.substring(0, trade.symbol.length - 3)
-              try {
-                const response = await axios.get(`https://api.fastforex.io/fetch-one?from=USD&to=${symbolName}&api_key=${api_key}`, {
-                });
-                closing_price = Number(response.data.result.CAD) === Number(trade.opening_price) ? randomCoinLossOrWin(Number(trade.opening_price)) : response.data.result.CAD;
-                // closing_price = response.data.result.CAD;
+//               }
+//             } else if (trade.symbol === "CADUSD") {
+//               symbolName = trade.symbol.substring(0, trade.symbol.length - 3)
+//               try {
+//                 const response = await axios.get(`https://api.fastforex.io/fetch-one?from=USD&to=${symbolName}&api_key=${api_key}`, {
+//                 });
+//                 closing_price = Number(response.data.result.CAD) === Number(trade.opening_price) ? randomCoinLossOrWin(Number(trade.opening_price)) : response.data.result.CAD;
+//                 // closing_price = response.data.result.CAD;
 
-              } catch (error) {
-                closing_price = randomCoinLossOrWin(trade.opening_price)
-              }
-            } else {
-              const avax = data.find(item => item.symbol === trade.symbol);
-              closing_price = avax.price
+//               } catch (error) {
+//                 closing_price = randomCoinLossOrWin(trade.opening_price)
+//               }
+//             } else {
+//               const avax = data.find(item => item.symbol === trade.symbol);
+//               closing_price = avax.price
 
-            }
-            if (trade.type_order === 1) { //เลือกขึ้น
+//             }
+//             if (trade.type_order === 1) { //เลือกขึ้น
 
-              if (trade.opening_price < closing_price) { //ชนะตลาด
-                net = ((Math2float(trade.amount) * Math2float(trade.selectPercent)) / 100);
-                people_amout = Math2float(net) + Math2float(trade.amount);
-                trade_result = 0;
-                await people.increment("credit", { by: people_amout, where: { id: trade.peopleId }, }).then((data) => {
+//               if (trade.opening_price < closing_price) { //ชนะตลาด
+//                 net = ((Math2float(trade.amount) * Math2float(trade.selectPercent)) / 100);
+//                 people_amout = Math2float(net) + Math2float(trade.amount);
+//                 trade_result = 0;
+//                 await people.increment("credit", { by: people_amout, where: { id: trade.peopleId }, }).then((data) => {
 
-                }).catch((err) => {
-                  console.log(err.message);
+//                 }).catch((err) => {
+//                   console.log(err.message);
 
-                })
-              } else {//แพ้ตลาด
-                net = Math2float(trade.amount);
-                trade_result = 1;
-              }
-            } else {//เลือกลง
-              if (trade.opening_price > closing_price) { //ชนะตลาด
-                net = ((Math2float(trade.amount) * Math2float(trade.selectPercent)) / 100);
-                trade_result = 0;
-                people_amout = Math2float(net) + Math2float(trade.amount);
-                await people.increment("credit", { by: people_amout, where: { id: trade.peopleId }, }).then((data) => {
+//                 })
+//               } else {//แพ้ตลาด
+//                 net = Math2float(trade.amount);
+//                 trade_result = 1;
+//               }
+//             } else {//เลือกลง
+//               if (trade.opening_price > closing_price) { //ชนะตลาด
+//                 net = ((Math2float(trade.amount) * Math2float(trade.selectPercent)) / 100);
+//                 trade_result = 0;
+//                 people_amout = Math2float(net) + Math2float(trade.amount);
+//                 await people.increment("credit", { by: people_amout, where: { id: trade.peopleId }, }).then((data) => {
 
-                }).catch((err) => {
-                  console.log(err.message);
+//                 }).catch((err) => {
+//                   console.log(err.message);
 
-                })
-              } else {//แพ้ตลาด
-                net = Math2float(trade.amount);
-                trade_result = 1;
-              }
-            }
-            await tradelist
-              .update(
-                { status: 1, trade_result: trade_result, net: net, closing_price: closing_price },
-                {
-                  where: { id: trade.id },
-                }
-              ).then((data) => {
+//                 })
+//               } else {//แพ้ตลาด
+//                 net = Math2float(trade.amount);
+//                 trade_result = 1;
+//               }
+//             }
+//             await tradelist
+//               .update(
+//                 { status: 1, trade_result: trade_result, net: net, closing_price: closing_price },
+//                 {
+//                   where: { id: trade.id },
+//                 }
+//               ).then((data) => {
 
-              }).catch((err) => {
-                console.log(err.message);
+//               }).catch((err) => {
+//                 console.log(err.message);
 
-              })
-          } else if (trade.adminstatus === 1) {//admin ให้ชนะ
-            let net = ((Math2float(trade.amount) * Math2float(trade.selectPercent)) / 100);
-            let people_amout = Math2float(net) + Math2float(trade.amount);
-            await people.increment("credit", { by: people_amout, where: { id: trade.peopleId }, }).then((data) => {
+//               })
+//           } else if (trade.adminstatus === 1) {//admin ให้ชนะ
+//             let net = ((Math2float(trade.amount) * Math2float(trade.selectPercent)) / 100);
+//             let people_amout = Math2float(net) + Math2float(trade.amount);
+//             await people.increment("credit", { by: people_amout, where: { id: trade.peopleId }, }).then((data) => {
 
-            }).catch((err) => {
-              console.log(err.message);
+//             }).catch((err) => {
+//               console.log(err.message);
 
-            })
-            await tradelist
-              .update(
-                { status: 1, trade_result: 0, net: net },
-                {
-                  where: { id: trade.id },
-                }
-              ).then((data) => {
+//             })
+//             await tradelist
+//               .update(
+//                 { status: 1, trade_result: 0, net: net },
+//                 {
+//                   where: { id: trade.id },
+//                 }
+//               ).then((data) => {
 
-              }).catch((err) => {
-                console.log(err.message);
+//               }).catch((err) => {
+//                 console.log(err.message);
 
-              })
-          } else {//admin ให้แพ้
-            let net = Math2float(trade.amount);
-            await tradelist
-              .update(
-                { status: 1, trade_result: 1, net: net },
-                {
-                  where: { id: trade.id },
-                }
-              )
-          }
-        });
+//               })
+//           } else {//admin ให้แพ้
+//             let net = Math2float(trade.amount);
+//             await tradelist
+//               .update(
+//                 { status: 1, trade_result: 1, net: net },
+//                 {
+//                   where: { id: trade.id },
+//                 }
+//               )
+//           }
+//         });
 
-      } catch (error) {
-        res.status(500).json({ error: error.message });
-      }
+//       } catch (error) {
+//         res.status(500).json({ error: error.message });
+//       }
 
 
-    } else {
-      console.log("no data");
+//     } else {
+//       console.log("no data");
 
-    }
-  } catch (error) {
-    res.status(500).send({
-      status: 500,
-      message:
-        error.message || "Some error occurred while creating the People.",
-    });
-  }
+//     }
+//   } catch (error) {
+//     res.status(500).send({
+//       status: 500,
+//       message:
+//         error.message || "Some error occurred while creating the People.",
+//     });
+//   }
 
-});
+// });
 
 
 exports.createUserTrade = async (req, res) => {
@@ -785,49 +785,58 @@ exports.getOneUserTradingTimeout = async (req, res) => {
 
         if (onetradelist.opening_price < price_stock) { //ชนะตลาด
 
-          net = ((Math2float(onetradelist.amount) * Math2float(onetradelist.selectPercent)) / 100);
+          // net = ((Math2float(onetradelist.amount) * Math2float(onetradelist.selectPercent)) / 100);
+          net = ((onetradelist.amount * onetradelist.selectPercent) / 100);
 
 
           trade_result = 0;
-          people_amout = Math2float(net) + Math2float(onetradelist.amount);
+          // people_amout = Math2float(net) + Math2float(onetradelist.amount);
+          people_amout = net + onetradelist.amount;
 
           await people.increment("credit", { by: people_amout, where: { id: onetradelist.peopleId }, });
 
 
         } else {//แพ้ตลาด
 
-          net = Math2float(onetradelist.amount);
+          // net = Math2float(onetradelist.amount);
+          net = onetradelist.amount;
           trade_result = 1;
         }
       } else {//เลือกลง
         if (onetradelist.opening_price > price_stock) { //ชนะตลาด
 
-          net = ((Math2float(onetradelist.amount) * Math2float(onetradelist.selectPercent)) / 100);
+          // net = ((Math2float(onetradelist.amount) * Math2float(onetradelist.selectPercent)) / 100);
+          net = ((onetradelist.amount * onetradelist.selectPercent) / 100);
 
 
           trade_result = 0;
-          people_amout = Math2float(net) + Math2float(onetradelist.amount);
+          // people_amout = Math2float(net) + Math2float(onetradelist.amount);
+          people_amout = net + onetradelist.amount;
 
           await people.increment("credit", { by: people_amout, where: { id: onetradelist.peopleId } });
 
         } else {//แพ้ตลาด
 
-          net = Math2float(onetradelist.amount);
+          // net = Math2float(onetradelist.amount);
+          net = onetradelist.amount;
           trade_result = 1;
         }
       }
 
     } else if (onetradelist.adminstatus == 1) { //แอดมินให้ชนะ
       price_stock = onetradelist.closing_price;
-      net = ((Math2float(onetradelist.amount) * Math2float(onetradelist.selectPercent)) / 100);
+      // net = ((Math2float(onetradelist.amount) * Math2float(onetradelist.selectPercent)) / 100);
+      net = ((onetradelist.amount * onetradelist.selectPercent) / 100);
 
       trade_result = 0;
-      people_amout = Math2float(net) + Math2float(onetradelist.amount);
+      // people_amout = Math2float(net) + Math2float(onetradelist.amount);
+      people_amout = net + onetradelist.amount;
       await people.increment("credit", { by: people_amout, where: { id: onetradelist.peopleId } });
 
     } else { //แอดมินให้แพ้
       price_stock = onetradelist.closing_price;
-      net = Math2float(onetradelist.amount);
+      // net = Math2float(onetradelist.amount);
+      net = onetradelist.amount;
       trade_result = 1;
     }
 
