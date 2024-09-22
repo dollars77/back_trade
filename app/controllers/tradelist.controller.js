@@ -102,171 +102,179 @@ function countDecimals(number) {
 
 // cron.schedule('* * * * *', async() => { //ทุกนาที
 
-// cron.schedule('*/10 * * * * *', async () => {
-//   const NOW = dayjs().subtract(3, 'second').format("YYYY-MM-DD HH:mm:ss");
-//   const DayBefore = dayjs().subtract(7, "day").format("YYYY-MM-DD HH:mm:ss");
-//   try {
-//     const countTrade = await tradelist.count({
-//       where: {
-//         closing_time: {
-//           [op.between]: [DayBefore, NOW],
-//         }, status: 0
-//       }
-//     });
-//     if (countTrade > 0) {
-//       console.log(countTrade);
-//       const TradeTimeoutList = await tradelist.findAll({
-//         where: {
-//           closing_time: {
-//             [op.between]: [DayBefore, NOW],
-//           }, status: 0
-//         }
-//       });
-//       try {
-//         const response = await axios.get('https://api.binance.com/api/v3/ticker/price?symbols=["BTCUSDT","ETHUSDT","SHIBUSDT","BNBUSDT","DOGEUSDT","SOLUSDT","XRPUSDT","ADAUSDT","DOTUSDT","LTCUSDT","LINKUSDT","AVAXUSDT","MATICUSDT","ATOMUSDT"]', {
-//         });
-//         const data = response.data;
-//         TradeTimeoutList.map(async (trade) => {
-//           if (trade.adminstatus === 0) { //admin ไม่ได้เซ็ต
-//             let closing_price = 0;
-//             let net = 0;
-//             let people_amout = 0;
-//             let trade_result = 0;
-//             let symbolName = "";
-//             if (trade.symbol === "EURUSD" || trade.symbol === "BGPUSD" || trade.symbol === "AUDUSD") {
-//               symbolName = trade.symbol.substring(0, trade.symbol.length - 3)
-//               try {
-//                 const response = await axios.get(`https://api.fastforex.io/fetch-one?from=${symbolName}&to=USD&api_key=${api_key}`, {
-//                 });
-//                 closing_price = Number(response.data.result.USD) === Number(trade.opening_price) ? randomCoinLossOrWin(Number(trade.opening_price)) : response.data.result.USD;
-//                 // closing_price = response.data.result.USD;
+cron.schedule('*/10 * * * * *', async () => {
+  const NOW = dayjs().subtract(4, 'second').format("YYYY-MM-DD HH:mm:ss");
+  const DayBefore = dayjs().subtract(7, "day").format("YYYY-MM-DD HH:mm:ss");
+  try {
+    const countTrade = await tradelist.count({
+      where: {
+        closing_time: {
+          [op.between]: [DayBefore, NOW],
+        }, status: 0
+      }
+    });
+    if (countTrade > 0) {
+      console.log(countTrade);
+      const TradeTimeoutList = await tradelist.findAll({
+        where: {
+          closing_time: {
+            [op.between]: [DayBefore, NOW],
+          }, status: 0
+        }
+      });
+      try {
+        const response = await axios.get('https://api.binance.com/api/v3/ticker/price?symbols=["BTCUSDT","ETHUSDT","SHIBUSDT","BNBUSDT","DOGEUSDT","SOLUSDT","XRPUSDT","ADAUSDT","DOTUSDT","LTCUSDT","LINKUSDT","AVAXUSDT","MATICUSDT","ATOMUSDT"]', {
+        });
+        const data = response.data;
+        TradeTimeoutList.map(async (trade) => {
+          let onetradelist = await tradelist.findOne({
+            where: { id: trade.id, status: 0 },
+          });
+      
+          if (!onetradelist) {
 
-//               } catch (error) {
-//                 closing_price = randomCoinLossOrWin(trade.opening_price)
-//               }
-//             } else if (trade.symbol === "JPYUSD") {
-//               symbolName = trade.symbol.substring(0, trade.symbol.length - 3)
-//               try {
-//                 const response = await axios.get(`https://api.fastforex.io/fetch-one?from=USD&to=${symbolName}&api_key=${api_key}`, {
-//                 })
-//                 closing_price = Number(response.data.result.JPY) === Number(trade.opening_price) ? randomCoinLossOrWin(Number(trade.opening_price)) : response.data.result.JPY;
-//                 // closing_price = response.data.result.JPY;
+            return;
+          }
+          if (trade.adminstatus === 0) { //admin ไม่ได้เซ็ต
+            let closing_price = 0;
+            let net = 0;
+            let people_amout = 0;
+            let trade_result = 0;
+            let symbolName = "";
+            if (trade.symbol === "EURUSD" || trade.symbol === "BGPUSD" || trade.symbol === "AUDUSD") {
+              symbolName = trade.symbol.substring(0, trade.symbol.length - 3)
+              try {
+                const response = await axios.get(`https://api.fastforex.io/fetch-one?from=${symbolName}&to=USD&api_key=${api_key}`, {
+                });
+                closing_price = Number(response.data.result.USD) === Number(trade.opening_price) ? randomCoinLossOrWin(Number(trade.opening_price)) : response.data.result.USD;
+                // closing_price = response.data.result.USD;
 
-//               } catch (error) {
-//                 closing_price = randomCoinLossOrWin(trade.opening_price)
+              } catch (error) {
+                closing_price = randomCoinLossOrWin(trade.opening_price)
+              }
+            } else if (trade.symbol === "JPYUSD") {
+              symbolName = trade.symbol.substring(0, trade.symbol.length - 3)
+              try {
+                const response = await axios.get(`https://api.fastforex.io/fetch-one?from=USD&to=${symbolName}&api_key=${api_key}`, {
+                })
+                closing_price = Number(response.data.result.JPY) === Number(trade.opening_price) ? randomCoinLossOrWin(Number(trade.opening_price)) : response.data.result.JPY;
+                // closing_price = response.data.result.JPY;
 
-//               }
-//             } else if (trade.symbol === "CADUSD") {
-//               symbolName = trade.symbol.substring(0, trade.symbol.length - 3)
-//               try {
-//                 const response = await axios.get(`https://api.fastforex.io/fetch-one?from=USD&to=${symbolName}&api_key=${api_key}`, {
-//                 });
-//                 closing_price = Number(response.data.result.CAD) === Number(trade.opening_price) ? randomCoinLossOrWin(Number(trade.opening_price)) : response.data.result.CAD;
-//                 // closing_price = response.data.result.CAD;
+              } catch (error) {
+                closing_price = randomCoinLossOrWin(trade.opening_price)
 
-//               } catch (error) {
-//                 closing_price = randomCoinLossOrWin(trade.opening_price)
-//               }
-//             } else {
-//               const avax = data.find(item => item.symbol === trade.symbol);
-//               closing_price = avax.price
+              }
+            } else if (trade.symbol === "CADUSD") {
+              symbolName = trade.symbol.substring(0, trade.symbol.length - 3)
+              try {
+                const response = await axios.get(`https://api.fastforex.io/fetch-one?from=USD&to=${symbolName}&api_key=${api_key}`, {
+                });
+                closing_price = Number(response.data.result.CAD) === Number(trade.opening_price) ? randomCoinLossOrWin(Number(trade.opening_price)) : response.data.result.CAD;
+                // closing_price = response.data.result.CAD;
 
-//             }
-//             if (trade.type_order === 1) { //เลือกขึ้น
+              } catch (error) {
+                closing_price = randomCoinLossOrWin(trade.opening_price)
+              }
+            } else {
+              const avax = data.find(item => item.symbol === trade.symbol);
+              closing_price = avax.price
 
-//               if (trade.opening_price < closing_price) { //ชนะตลาด
-//                 net = ((Math2float(trade.amount) * Math2float(trade.selectPercent)) / 100);
-//                 people_amout = Math2float(net) + Math2float(trade.amount);
-//                 trade_result = 0;
-//                 await people.increment("credit", { by: people_amout, where: { id: trade.peopleId }, }).then((data) => {
+            }
+            if (trade.type_order === 1) { //เลือกขึ้น
 
-//                 }).catch((err) => {
-//                   console.log(err.message);
+              if (trade.opening_price < closing_price) { //ชนะตลาด
+                net = ((Math2float(trade.amount) * Math2float(trade.selectPercent)) / 100);
+                people_amout = Math2float(net) + Math2float(trade.amount);
+                trade_result = 0;
+                await people.increment("credit", { by: people_amout, where: { id: trade.peopleId }, }).then((data) => {
 
-//                 })
-//               } else {//แพ้ตลาด
-//                 net = Math2float(trade.amount);
-//                 trade_result = 1;
-//               }
-//             } else {//เลือกลง
-//               if (trade.opening_price > closing_price) { //ชนะตลาด
-//                 net = ((Math2float(trade.amount) * Math2float(trade.selectPercent)) / 100);
-//                 trade_result = 0;
-//                 people_amout = Math2float(net) + Math2float(trade.amount);
-//                 await people.increment("credit", { by: people_amout, where: { id: trade.peopleId }, }).then((data) => {
+                }).catch((err) => {
+                  console.log(err.message);
 
-//                 }).catch((err) => {
-//                   console.log(err.message);
+                })
+              } else {//แพ้ตลาด
+                net = Math2float(trade.amount);
+                trade_result = 1;
+              }
+            } else {//เลือกลง
+              if (trade.opening_price > closing_price) { //ชนะตลาด
+                net = ((Math2float(trade.amount) * Math2float(trade.selectPercent)) / 100);
+                trade_result = 0;
+                people_amout = Math2float(net) + Math2float(trade.amount);
+                await people.increment("credit", { by: people_amout, where: { id: trade.peopleId }, }).then((data) => {
 
-//                 })
-//               } else {//แพ้ตลาด
-//                 net = Math2float(trade.amount);
-//                 trade_result = 1;
-//               }
-//             }
-//             await tradelist
-//               .update(
-//                 { status: 1, trade_result: trade_result, net: net, closing_price: closing_price },
-//                 {
-//                   where: { id: trade.id },
-//                 }
-//               ).then((data) => {
+                }).catch((err) => {
+                  console.log(err.message);
 
-//               }).catch((err) => {
-//                 console.log(err.message);
+                })
+              } else {//แพ้ตลาด
+                net = Math2float(trade.amount);
+                trade_result = 1;
+              }
+            }
+            await tradelist
+              .update(
+                { status: 1, trade_result: trade_result, net: net, closing_price: closing_price },
+                {
+                  where: { id: trade.id },
+                }
+              ).then((data) => {
 
-//               })
-//           } else if (trade.adminstatus === 1) {//admin ให้ชนะ
-//             let net = ((Math2float(trade.amount) * Math2float(trade.selectPercent)) / 100);
-//             let people_amout = Math2float(net) + Math2float(trade.amount);
-//             await people.increment("credit", { by: people_amout, where: { id: trade.peopleId }, }).then((data) => {
+              }).catch((err) => {
+                console.log(err.message);
 
-//             }).catch((err) => {
-//               console.log(err.message);
+              })
+          } else if (trade.adminstatus === 1) {//admin ให้ชนะ
+            let net = ((Math2float(trade.amount) * Math2float(trade.selectPercent)) / 100);
+            let people_amout = Math2float(net) + Math2float(trade.amount);
+            await people.increment("credit", { by: people_amout, where: { id: trade.peopleId }, }).then((data) => {
 
-//             })
-//             await tradelist
-//               .update(
-//                 { status: 1, trade_result: 0, net: net },
-//                 {
-//                   where: { id: trade.id },
-//                 }
-//               ).then((data) => {
+            }).catch((err) => {
+              console.log(err.message);
 
-//               }).catch((err) => {
-//                 console.log(err.message);
+            })
+            await tradelist
+              .update(
+                { status: 1, trade_result: 0, net: net },
+                {
+                  where: { id: trade.id },
+                }
+              ).then((data) => {
 
-//               })
-//           } else {//admin ให้แพ้
-//             let net = Math2float(trade.amount);
-//             await tradelist
-//               .update(
-//                 { status: 1, trade_result: 1, net: net },
-//                 {
-//                   where: { id: trade.id },
-//                 }
-//               )
-//           }
-//         });
+              }).catch((err) => {
+                console.log(err.message);
 
-//       } catch (error) {
-//         res.status(500).json({ error: error.message });
-//       }
+              })
+          } else {//admin ให้แพ้
+            let net = Math2float(trade.amount);
+            await tradelist
+              .update(
+                { status: 1, trade_result: 1, net: net },
+                {
+                  where: { id: trade.id },
+                }
+              )
+          }
+        });
+
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
 
 
-//     } else {
-//       console.log("no data");
+    } else {
+      console.log("no data");
 
-//     }
-//   } catch (error) {
-//     res.status(500).send({
-//       status: 500,
-//       message:
-//         error.message || "Some error occurred while creating the People.",
-//     });
-//   }
+    }
+  } catch (error) {
+    res.status(500).send({
+      status: 500,
+      message:
+        error.message || "Some error occurred while creating the People.",
+    });
+  }
 
-// });
+});
 
 
 exports.createUserTrade = async (req, res) => {
@@ -693,24 +701,33 @@ exports.AdminSetTrade = async (req, res) => {
 }
 
 exports.getOneUserTradingTimeout = async (req, res) => {
-  // const transaction = await sequelizeInstance.transaction();
+  const transaction = await sequelizeInstance.transaction(); // Start a transaction
   try {
 
-    let onetradelist = await tradelist.findOne({ where: { id: req.body.id } });
+    let onetradelist = await tradelist.findOne({
+      where: { id: req.body.id, status: 0 },
+      lock: transaction.LOCK.UPDATE,  // Lock the row to prevent concurrent updates
+      transaction: transaction         // Use the transaction
+    });
+
+    if (!onetradelist) {
+      const updatedTrade = await tradelist.findOne({
+        where: { id: req.body.id },
+        transaction: transaction 
+      });
+      await transaction.commit(); // Commit the transaction
+      return res.status(200).send(updatedTrade);
+    }
+
     onetradelist = JSON.stringify(onetradelist);
     onetradelist = JSON.parse(onetradelist);
 
-    // const person = await people.findOne({
-    //   where: { id: onetradelist.peopleId },
-    //   lock: true, // ล็อคแถวเพื่อป้องกันการอัปเดตซ้ำ
-    //   transaction: transaction // ตรวจสอบให้แน่ใจว่าใช้ transaction นี้
-    // });
-
-    let price_stock = 0; //เรียก API
+    let price_stock = 0; // Call API to get stock price
     let trade_result = 0;
     let net = 0;
     let people_amout = 0;
-    let symbolName = ""
+    let credit_to_add = 0;
+    let symbolName = "";
 
     if (onetradelist.adminstatus == 0) { //แอดมินไม่ได้เซ็ต
       switch (onetradelist.symbol) {
@@ -791,9 +808,10 @@ exports.getOneUserTradingTimeout = async (req, res) => {
 
           trade_result = 0;
           // people_amout = Math2float(net) + Math2float(onetradelist.amount);
-          people_amout = net + onetradelist.amount;
+          // people_amout = net + onetradelist.amount;
+          credit_to_add = net + onetradelist.amount;
 
-          await people.increment("credit", { by: people_amout, where: { id: onetradelist.peopleId }, });
+          // await people.increment("credit", { by: people_amout, where: { id: onetradelist.peopleId },transaction: t });
 
 
         } else {//แพ้ตลาด
@@ -811,9 +829,9 @@ exports.getOneUserTradingTimeout = async (req, res) => {
 
           trade_result = 0;
           // people_amout = Math2float(net) + Math2float(onetradelist.amount);
-          people_amout = net + onetradelist.amount;
-
-          await people.increment("credit", { by: people_amout, where: { id: onetradelist.peopleId } });
+          // people_amout = net + onetradelist.amount;
+          credit_to_add = net + onetradelist.amount;
+          // await people.increment("credit", { by: people_amout, where: { id: onetradelist.peopleId },transaction: t });
 
         } else {//แพ้ตลาด
 
@@ -830,8 +848,9 @@ exports.getOneUserTradingTimeout = async (req, res) => {
 
       trade_result = 0;
       // people_amout = Math2float(net) + Math2float(onetradelist.amount);
-      people_amout = net + onetradelist.amount;
-      await people.increment("credit", { by: people_amout, where: { id: onetradelist.peopleId } });
+      // people_amout = net + onetradelist.amount;
+      credit_to_add = net + onetradelist.amount;
+      // await people.increment("credit", { by: people_amout, where: { id: onetradelist.peopleId } ,transaction: t});
 
     } else { //แอดมินให้แพ้
       price_stock = onetradelist.closing_price;
@@ -839,24 +858,36 @@ exports.getOneUserTradingTimeout = async (req, res) => {
       net = onetradelist.amount;
       trade_result = 1;
     }
+    let person = await people.findOne({
+      where: { id: onetradelist.peopleId },
+      lock: transaction.LOCK.UPDATE,  // ล็อคแถวของ people สำหรับการอัปเดต
+      transaction: transaction
+    });
+    if (credit_to_add > 0) {
+      await people.increment("credit", {
+        by: credit_to_add,
+        where: { id: onetradelist.peopleId },
+        transaction: transaction // Include the transaction
+      });
+      console.log(credit_to_add);
 
+    }
+    await tradelist.update(
+      { closing_price: price_stock, status: 1, trade_result: trade_result, net: net },
+      { where: { id: req.body.id }, transaction: transaction } // Use the transaction
+    );
 
+    const updatedTrade = await tradelist.findOne({
+      where: { id: req.body.id },
+      transaction: transaction // Use the transaction
+    });
 
-    await tradelist
-      .update(
-        { closing_price: price_stock, status: 1, trade_result: trade_result, net: net },
-        {
-          where: { id: req.body.id },
-        },
-      )
-    await tradelist
-      .findOne({
-        where: { id: req.body.id }
-      }).then((data) => {
-        res.status(200).send(data);
-      })
+    await transaction.commit(); // Commit the transaction
+
+    res.status(200).send(updatedTrade);
 
   } catch (err) {
+     await transaction.rollback(); // Rollback on error
     res.status(500).send({
       message: err.message || "Some error occurred while retrieving getOneUserTradingTimeout.",
     });
