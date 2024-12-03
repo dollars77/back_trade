@@ -4,6 +4,9 @@ const people = db.people;
 const dayjs = require("dayjs");
 const axios = require('axios');
 const api_key = "4c1ae80e15-97c9c85ef4-sibb6h";
+
+const api_key_gold = "goldapi-ltotnpsm3x2mr8o-io";
+
 var cron = require('node-cron');
 
 const sequelize = require("sequelize");
@@ -114,7 +117,7 @@ cron.schedule('*/10 * * * * *', async () => {
       }
     });
     if (countTrade > 0) {
-      console.log(countTrade);
+
       const TradeTimeoutList = await tradelist.findAll({
         where: {
           closing_time: {
@@ -130,7 +133,7 @@ cron.schedule('*/10 * * * * *', async () => {
           let onetradelist = await tradelist.findOne({
             where: { id: trade.id, status: 0 },
           });
-      
+
           if (!onetradelist) {
 
             return;
@@ -171,6 +174,24 @@ cron.schedule('*/10 * * * * *', async () => {
                 });
                 closing_price = Number(response.data.result.CAD) === Number(trade.opening_price) ? randomCoinLossOrWin(Number(trade.opening_price)) : response.data.result.CAD;
                 // closing_price = response.data.result.CAD;
+
+              } catch (error) {
+                closing_price = randomCoinLossOrWin(trade.opening_price)
+              }
+            } else if (trade.symbol === "XAUUSD") {
+              symbolName = trade.symbol.substring(0, trade.symbol.length - 3)
+              try {
+
+                const options = {
+                  method: 'GET',
+                  url: 'https://www.goldapi.io/api/XAU/USD',
+                  headers: {
+                    "x-access-token": api_key_gold,
+                    "Content-Type": "application/json"
+                  }
+                };
+                const response = await axios.request(options);
+                closing_price = Number(response.data.price) === Number(trade.opening_price) ? randomCoinLossOrWin(Number(trade.opening_price)) : response.data.price;
 
               } catch (error) {
                 closing_price = randomCoinLossOrWin(trade.opening_price)
@@ -469,6 +490,22 @@ exports.getTradePrice = async (req, res) => {
         getPrice = genRand(0.001, 1.3, 5);
       }
       symbolName += "USD";
+    } else if (symbolName === "XAU") {
+      try {
+        const options = {
+          method: 'GET',
+          url: 'https://www.goldapi.io/api/XAU/USD',
+          headers: {
+            "x-access-token": api_key_gold,
+            "Content-Type": "application/json"
+          }
+        };
+        const response = await axios.request(options);
+        getPrice = response.data.price;
+      } catch (error) {
+        getPrice = genRand(2620, 2660, 3);
+      }
+      symbolName += "USD";
     } else {
       try {
         const response = await axios.get(`https://api.binance.com/api/v3/ticker/price?symbol=${symbolName}`, {
@@ -713,7 +750,7 @@ exports.getOneUserTradingTimeout = async (req, res) => {
     if (!onetradelist) {
       const updatedTrade = await tradelist.findOne({
         where: { id: req.body.id },
-        transaction: transaction 
+        transaction: transaction
       });
       await transaction.commit(); // Commit the transaction
       return res.status(200).send(updatedTrade);
@@ -765,7 +802,24 @@ exports.getOneUserTradingTimeout = async (req, res) => {
             price_stock = randomCoinLossOrWin(onetradelist.opening_price);
           }
           break;
-        // case "BTCUSDT":
+          case "XAUUSD":
+            symbolName = onetradelist.symbol.substring(0, onetradelist.symbol.length - 3)
+            try {
+              const options = {
+                method: 'GET',
+                url: 'https://www.goldapi.io/api/XAU/USD',
+                headers: {
+                  "x-access-token": api_key_gold,
+                  "Content-Type": "application/json"
+                }
+              };
+              const response = await axios.request(options);
+              price_stock = response.data.price;
+  
+            } catch (error) {
+              price_stock = randomCoinLossOrWin(onetradelist.opening_price);
+            }
+            break;
         default:
           try {
             const response = await axios.get(`https://api.binance.com/api/v3/ticker/price?symbol=${onetradelist.symbol}`, {
@@ -887,7 +941,7 @@ exports.getOneUserTradingTimeout = async (req, res) => {
     res.status(200).send(updatedTrade);
 
   } catch (err) {
-     await transaction.rollback(); // Rollback on error
+    await transaction.rollback(); // Rollback on error
     res.status(500).send({
       message: err.message || "Some error occurred while retrieving getOneUserTradingTimeout.",
     });
