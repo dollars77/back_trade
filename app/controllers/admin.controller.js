@@ -2,7 +2,7 @@ const db = require("../models");
 const user = db.user;
 const role = db.role;
 const crypto = require("crypto");
-
+const sequelize = require("sequelize");
 
 exports.getAllAdmin = async (req, res) => {
     role.findByPk(2, {
@@ -56,9 +56,12 @@ exports.updateAdmin = async (req, res) => {
       }
   
       const id = req.params.id;
-    user.update(req.body, {
+      user.update({
+        ...req.body,
+        version: sequelize.literal('version + 1')
+      }, {
         where: { id: id }
-    })
+      })
         .then(num => {
             if (num == 1) {
                 res.send({

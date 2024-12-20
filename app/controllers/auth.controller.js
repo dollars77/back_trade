@@ -65,8 +65,14 @@ exports.signin = (req, res) => {
           message: "Invalid Password!"
         });
       }
-      var token = jwt.sign({ id: user.id }, config.secret, {
-        expiresIn: 604800 // 24 hours
+      // var token = jwt.sign({ id: user.id }, config.secret, {
+      //   expiresIn: 604800 // 24 hours
+      // });
+      var token = jwt.sign({ 
+        id: user.id,
+        version: user.version  // เพิ่ม version ใน token
+      }, config.secret, {
+        expiresIn: "1d"
       });
       var authorities = [];
       user.getRoles().then(roles => {
