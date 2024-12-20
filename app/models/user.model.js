@@ -9,7 +9,12 @@ module.exports = (sequelize, Sequelize) => {
       },
       password: {
         type: Sequelize.STRING
+      },
+      version: {
+        type: Sequelize.INTEGER,
+        defaultValue: 1
       }
+  
     });
     return User;
   };
