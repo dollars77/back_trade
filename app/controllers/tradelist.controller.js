@@ -1,7 +1,13 @@
 const db = require("../models");
 const tradelist = db.tradelist;
 const people = db.people;
+
 const dayjs = require("dayjs");
+const utc = require("dayjs/plugin/utc");
+const timezone = require("dayjs/plugin/timezone");
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
 const axios = require('axios');
 const api_key = "4c1ae80e15-97c9c85ef4-sibb6h";
 
@@ -106,8 +112,11 @@ function countDecimals(number) {
 // cron.schedule('* * * * *', async() => { //ทุกนาที
 
 cron.schedule('*/10 * * * * *', async () => {
-  const NOW = dayjs().subtract(4, 'second').format("YYYY-MM-DD HH:mm:ss");
-  const DayBefore = dayjs().subtract(7, "day").format("YYYY-MM-DD HH:mm:ss");
+  // const NOW = dayjs().subtract(4, 'second').format("YYYY-MM-DD HH:mm:ss");
+  // const DayBefore = dayjs().subtract(7, "day").format("YYYY-MM-DD HH:mm:ss");
+  const NOW = dayjs().tz("Asia/Bangkok").subtract(4, 'second').format("YYYY-MM-DD HH:mm:ss");
+  const DayBefore = dayjs().tz("Asia/Bangkok").subtract(7, "day").format("YYYY-MM-DD HH:mm:ss");
+
   try {
     const countTrade = await tradelist.count({
       where: {
@@ -434,8 +443,6 @@ exports.createUserTrade = async (req, res) => {
 
 exports.getTradePrice = async (req, res) => {
   try {
-
-
     dayjs.locale("th");
     let peopledata = null;
     let symbolName = req.body.symbol.toUpperCase();
@@ -529,14 +536,19 @@ exports.getTradePrice = async (req, res) => {
 exports.createUserTradeConfirm = async (req, res) => {
   const symbolName = req.body.symbol.toUpperCase();
   const getPrice = req.body.getPrice;
-  const user_data = {
+  const openingTime = dayjs().tz("Asia/Bangkok").utc().format("YYYY-MM-DD HH:mm:ss");
+  const closingTime = dayjs().tz("Asia/Bangkok").add(req.body.countTime, 'minute').utc().format("YYYY-MM-DD HH:mm:ss");
+
+
+  let user_data = {
 
     symbol: symbolName,
     type_order: (req.body.selectSell !== 1 && req.body.selectSell !== 2 ? 1 : req.body.selectSell),
     amount: Number(req.body.amount),
-    opening_time: dayjs(),
+    opening_time: openingTime,
     opening_price: Number(getPrice),
-    closing_time: dayjs().add(req.body.countTime, 'minute'), // second , minute , day
+    // closing_time: dayjs().tz("Asia/Yangon").add(req.body.countTime, 'minute').toISOString(), // second , minute , day
+    closing_time: closingTime,
     status: 0,
     adminstatus: 0,
     selectPercent: req.body.selectPercent,
@@ -802,24 +814,24 @@ exports.getOneUserTradingTimeout = async (req, res) => {
             price_stock = randomCoinLossOrWin(onetradelist.opening_price);
           }
           break;
-          case "XAUUSD":
-            symbolName = onetradelist.symbol.substring(0, onetradelist.symbol.length - 3)
-            try {
-              const options = {
-                method: 'GET',
-                url: 'https://www.goldapi.io/api/XAU/USD',
-                headers: {
-                  "x-access-token": api_key_gold,
-                  "Content-Type": "application/json"
-                }
-              };
-              const response = await axios.request(options);
-              price_stock = response.data.price;
-  
-            } catch (error) {
-              price_stock = randomCoinLossOrWin(onetradelist.opening_price);
-            }
-            break;
+        case "XAUUSD":
+          symbolName = onetradelist.symbol.substring(0, onetradelist.symbol.length - 3)
+          try {
+            const options = {
+              method: 'GET',
+              url: 'https://www.goldapi.io/api/XAU/USD',
+              headers: {
+                "x-access-token": api_key_gold,
+                "Content-Type": "application/json"
+              }
+            };
+            const response = await axios.request(options);
+            price_stock = response.data.price;
+
+          } catch (error) {
+            price_stock = randomCoinLossOrWin(onetradelist.opening_price);
+          }
+          break;
         default:
           try {
             const response = await axios.get(`https://api.binance.com/api/v3/ticker/price?symbol=${onetradelist.symbol}`, {
