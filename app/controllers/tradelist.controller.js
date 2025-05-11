@@ -114,8 +114,9 @@ function countDecimals(number) {
 cron.schedule('*/10 * * * * *', async () => {
   // const NOW = dayjs().subtract(4, 'second').format("YYYY-MM-DD HH:mm:ss");
   // const DayBefore = dayjs().subtract(7, "day").format("YYYY-MM-DD HH:mm:ss");
-  const NOW = dayjs().tz("Asia/Bangkok").subtract(4, 'second').format("YYYY-MM-DD HH:mm:ss");
-  const DayBefore = dayjs().tz("Asia/Bangkok").subtract(7, "day").format("YYYY-MM-DD HH:mm:ss");
+  const NOW = dayjs().utc().tz("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss");
+  const DayBefore = dayjs().utc().tz("Asia/Bangkok").subtract(7, "day").format("YYYY-MM-DD HH:mm:ss");
+
 
   try {
     const countTrade = await tradelist.count({
@@ -536,8 +537,13 @@ exports.getTradePrice = async (req, res) => {
 exports.createUserTradeConfirm = async (req, res) => {
   const symbolName = req.body.symbol.toUpperCase();
   const getPrice = req.body.getPrice;
-  const openingTime = dayjs().tz("Asia/Bangkok").utc().format("YYYY-MM-DD HH:mm:ss");
-  const closingTime = dayjs().tz("Asia/Bangkok").add(req.body.countTime, 'minute').utc().format("YYYY-MM-DD HH:mm:ss");
+
+  // const openingTime = dayjs().tz("Asia/Yangon").utc();
+  // const closingTime = dayjs().tz("Asia/Yangon").add(req.body.countTime, 'minute').utc();
+
+  const openingTime = dayjs().utc().tz("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss");
+  const closingTime = dayjs().utc().tz("Asia/Bangkok").add(req.body.countTime, 'minute').format("YYYY-MM-DD HH:mm:ss");
+
 
 
   let user_data = {
@@ -547,7 +553,7 @@ exports.createUserTradeConfirm = async (req, res) => {
     amount: Number(req.body.amount),
     opening_time: openingTime,
     opening_price: Number(getPrice),
-    // closing_time: dayjs().tz("Asia/Yangon").add(req.body.countTime, 'minute').toISOString(), // second , minute , day
+    // closing_time: dayjs().tz("Asia/Bangkok").add(req.body.countTime, 'minute').toISOString(), // second , minute , day
     closing_time: closingTime,
     status: 0,
     adminstatus: 0,
