@@ -114,8 +114,8 @@ function countDecimals(number) {
 cron.schedule('*/10 * * * * *', async () => {
   // const NOW = dayjs().subtract(4, 'second').format("YYYY-MM-DD HH:mm:ss");
   // const DayBefore = dayjs().subtract(7, "day").format("YYYY-MM-DD HH:mm:ss");
-  const NOW = dayjs().tz("Asia/Bangkok").subtract(4, 'second').format("YYYY-MM-DD HH:mm:ss");
-  const DayBefore = dayjs().tz("Asia/Bangkok").subtract(7, "day").format("YYYY-MM-DD HH:mm:ss");
+  const NOW = dayjs().tz("Asia/Bangkok").subtract(4, 'second').toDate();
+  const DayBefore = dayjs().tz("Asia/Bangkok").subtract(7, "day").toDate();
 
 
   try {
@@ -541,8 +541,8 @@ exports.createUserTradeConfirm = async (req, res) => {
   // const openingTime = dayjs().tz("Asia/Yangon").utc();
   // const closingTime = dayjs().tz("Asia/Yangon").add(req.body.countTime, 'minute').utc();
 
-  const openingTime = dayjs().tz("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss");
-  const closingTime = dayjs().tz("Asia/Bangkok").add(req.body.countTime, 'minute').format("YYYY-MM-DD HH:mm:ss");
+  const openingTime = dayjs().tz("Asia/Bangkok").toDate();
+  const closingTime = dayjs().tz("Asia/Bangkok").add(req.body.countTime, 'minute').toDate();
 
   let user_data = {
 
@@ -744,31 +744,25 @@ exports.getUserAllTradeAdmin = async (req, res) => {
     })
     .then((data) => {
 
-      const currentTimeBKK = dayjs().tz("Asia/Bangkok");
+            // เพิ่มข้อมูลความต่างของเวลาลงในแต่ละรายการ
+      const dataWithTimeDiff = data.map(item => {
+        const itemData = item.toJSON(); // แปลง Sequelize instance เป็น JSON
+        const currentTime = dayjs().tz("Asia/Bangkok");
+        // คำนวณความต่างของเวลาปิดการซื้อขาย (อยู่ในหน่วยวินาที)
+        const closingTime = dayjs.tz(itemData.closing_time, "Asia/Bangkok");
+        const timeDiff = closingTime.diff(currentTime, "second");
 
-      const dataWithCountdown = data.map(item => {
-        const itemData = item.toJSON();
+        // ใช้ Math.max เพื่อให้แน่ใจว่าไม่มีค่าติดลบ
+        itemData.closingTimestamp = Math.max(0, timeDiff) + 3;
+        // console.log(dayjs().tz("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"));
+        // console.log(dayjs.tz(itemData.closing_time, "Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss"));
 
-        // แปลง closing_time เป็นวัตถุ dayjs ในโซนเวลาไทย
-        const closingTimeBKK = dayjs.tz(itemData.closing_time, "Asia/Bangkok");
 
-        // คำนวณเวลาที่เหลือในหน่วยมิลลิวินาที (ไม่น้อยกว่า 0)
-        const timeRemainingMs = Math.max(0, closingTimeBKK.diff(currentTimeBKK));
-
-        // บวกเพิ่ม 3000 มิลลิวินาที
-        const countdownMs = timeRemainingMs + 3000;
-
-        // เพิ่มข้อมูลสำหรับ Countdown_UI
-        // itemData.countdownMs = countdownMs;
-
-        // คำนวณ timestamp ที่ต้องนับถอยหลังถึง (เวลาปัจจุบัน + เวลาที่เหลือ + 3วินาที)
-        // นี่คือสิ่งที่ใช้กับ Countdown_UI
-        itemData.closingTimestamp = currentTimeBKK.valueOf() + countdownMs;
 
         return itemData;
       });
 
-      res.send(dataWithCountdown);
+      res.send(dataWithTimeDiff);
     })
     .catch((err) => {
       res.status(500).send({
