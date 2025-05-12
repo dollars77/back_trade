@@ -114,8 +114,8 @@ function countDecimals(number) {
 cron.schedule('*/10 * * * * *', async () => {
   // const NOW = dayjs().subtract(4, 'second').format("YYYY-MM-DD HH:mm:ss");
   // const DayBefore = dayjs().subtract(7, "day").format("YYYY-MM-DD HH:mm:ss");
-  const NOW = dayjs().utc().tz("Asia/Bangkok").format("YYYY-MM-DD HH:mm:ss");
-  const DayBefore = dayjs().utc().tz("Asia/Bangkok").subtract(7, "day").format("YYYY-MM-DD HH:mm:ss");
+  const NOW = dayjs().tz("Asia/Bangkok").subtract(4, 'second').format("YYYY-MM-DD HH:mm:ss");
+  const DayBefore = dayjs().tz("Asia/Bangkok").subtract(7, "day").format("YYYY-MM-DD HH:mm:ss");
 
 
   try {
@@ -580,6 +580,32 @@ exports.createUserTradeConfirm = async (req, res) => {
     });
 }
 
+// exports.getOneUserTrading = async (req, res) => {
+//   await tradelist
+//     .findAll({
+//       include: [
+//         {
+//           model: people,
+//           as: "people",
+//           attributes: [
+//             "uid",
+//             "credit",
+
+//           ],
+//         }
+//       ],
+//       where: { status: 0, peopleId: req.params.id },
+//       order: [["createdAt", "DESC"]],
+//     }).then((data) => {
+//       res.send(data);
+//     })
+//     .catch((err) => {
+//       res.status(500).send({
+//         message: err.message || "Some error occurred while retrieving User.",
+//       });
+//     });
+// }
+
 exports.getOneUserTrading = async (req, res) => {
   await tradelist
     .findAll({
@@ -590,21 +616,39 @@ exports.getOneUserTrading = async (req, res) => {
           attributes: [
             "uid",
             "credit",
-
           ],
         }
       ],
       where: { status: 0, peopleId: req.params.id },
       order: [["createdAt", "DESC"]],
-    }).then((data) => {
-      res.send(data);
+    })
+    .then((data) => {
+      // คำนวณความต่างของเวลาก่อนส่งไปยัง frontend
+      const currentTime = dayjs().tz("Asia/Bangkok");
+
+      // เพิ่มข้อมูลความต่างของเวลาลงในแต่ละรายการ
+      const dataWithTimeDiff = data.map(item => {
+        const itemData = item.toJSON(); // แปลง Sequelize instance เป็น JSON
+
+        // คำนวณความต่างของเวลาปิดการซื้อขาย (อยู่ในหน่วยวินาที)
+        const closingTime = dayjs.tz(itemData.closing_time, "Asia/Bangkok");
+        const timeDiff = closingTime.diff(currentTime, "second");
+
+        // ใช้ Math.max เพื่อให้แน่ใจว่าไม่มีค่าติดลบ
+        itemData.timeRemainingSeconds = Math.max(0, timeDiff);
+
+        return itemData;
+      });
+
+      res.send(dataWithTimeDiff);
     })
     .catch((err) => {
       res.status(500).send({
         message: err.message || "Some error occurred while retrieving User.",
       });
     });
-}
+};
+
 exports.getOneUserAllTrade = async (req, res) => {
   await tradelist
     .findAll({
@@ -655,6 +699,32 @@ exports.getOneUserAllTradeAdmin = async (req, res) => {
       });
     });
 }
+// exports.getUserAllTradeAdmin = async (req, res) => {
+//   await tradelist
+//     .findAll({
+//       include: [
+//         {
+//           model: people,
+//           as: "people",
+//           attributes: [
+//             "uid",
+//             "credit",
+//             "firstname"
+
+//           ],
+//         }
+//       ],
+//       where: { status: 0 },
+//       order: [["createdAt", "ASC"]],
+//     }).then((data) => {
+//       res.send(data);
+//     })
+//     .catch((err) => {
+//       res.status(500).send({
+//         message: err.message || "Some error occurred while retrieving User.",
+//       });
+//     });
+// }
 exports.getUserAllTradeAdmin = async (req, res) => {
   await tradelist
     .findAll({
@@ -666,22 +736,46 @@ exports.getUserAllTradeAdmin = async (req, res) => {
             "uid",
             "credit",
             "firstname"
-
           ],
         }
       ],
       where: { status: 0 },
       order: [["createdAt", "ASC"]],
-    }).then((data) => {
-      res.send(data);
+    })
+    .then((data) => {
+
+      const currentTimeBKK = dayjs().tz("Asia/Bangkok");
+
+      const dataWithCountdown = data.map(item => {
+        const itemData = item.toJSON();
+
+        // แปลง closing_time เป็นวัตถุ dayjs ในโซนเวลาไทย
+        const closingTimeBKK = dayjs.tz(itemData.closing_time, "Asia/Bangkok");
+
+        // คำนวณเวลาที่เหลือในหน่วยมิลลิวินาที (ไม่น้อยกว่า 0)
+        const timeRemainingMs = Math.max(0, closingTimeBKK.diff(currentTimeBKK));
+
+        // บวกเพิ่ม 3000 มิลลิวินาที
+        const countdownMs = timeRemainingMs + 3000;
+
+        // เพิ่มข้อมูลสำหรับ Countdown_UI
+        // itemData.countdownMs = countdownMs;
+
+        // คำนวณ timestamp ที่ต้องนับถอยหลังถึง (เวลาปัจจุบัน + เวลาที่เหลือ + 3วินาที)
+        // นี่คือสิ่งที่ใช้กับ Countdown_UI
+        itemData.closingTimestamp = currentTimeBKK.valueOf() + countdownMs;
+
+        return itemData;
+      });
+
+      res.send(dataWithCountdown);
     })
     .catch((err) => {
       res.status(500).send({
         message: err.message || "Some error occurred while retrieving User.",
       });
     });
-}
-
+};
 exports.getUserAllTradeHistoryAdmin = async (req, res) => {
   await tradelist
     .findAll({
