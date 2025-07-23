@@ -204,7 +204,14 @@ cron.schedule('*/10 * * * * *', async () => {
                 closing_price = Number(response.data.price) === Number(trade.opening_price) ? randomCoinLossOrWin(Number(trade.opening_price)) : response.data.price;
 
               } catch (error) {
-                closing_price = randomCoinLossOrWin(trade.opening_price)
+                try {
+                  const response = await axios.get(`https://api.fastforex.io/fetch-one?from=PAXG&to=USD&api_key=${api_key}`, {
+                  });
+                  closing_price = Number(response.data.result.USD) === Number(trade.opening_price) ? randomCoinLossOrWin(Number(trade.opening_price)) : response.data.result.USD;
+
+                } catch (err) {
+                  closing_price = randomCoinLossOrWin(trade.opening_price)
+                }
               }
             } else {
               const avax = data.find(item => item.symbol === trade.symbol);
@@ -511,7 +518,13 @@ exports.getTradePrice = async (req, res) => {
         const response = await axios.request(options);
         getPrice = response.data.price;
       } catch (error) {
-        getPrice = genRand(2620, 2660, 3);
+        try {
+          const response = await axios.get(`https://api.fastforex.io/fetch-one?from=PAXG&to=USD&api_key=${api_key}`, {
+          });
+          getPrice = response.data.result.USD;
+        } catch (err) {
+          getPrice = genRand(3200, 3350, 3);
+        }
       }
       symbolName += "USD";
     } else {
@@ -744,7 +757,7 @@ exports.getUserAllTradeAdmin = async (req, res) => {
     })
     .then((data) => {
 
-            // เพิ่มข้อมูลความต่างของเวลาลงในแต่ละรายการ
+      // เพิ่มข้อมูลความต่างของเวลาลงในแต่ละรายการ
       const dataWithTimeDiff = data.map(item => {
         const itemData = item.toJSON(); // แปลง Sequelize instance เป็น JSON
         const currentTime = dayjs().tz("Asia/Bangkok");
